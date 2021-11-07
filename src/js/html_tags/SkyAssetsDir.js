@@ -1,17 +1,3 @@
-//Child classes
-window.customElements.define('sky-moon-diffuse-map', class extends HTMLElement{});
-window.customElements.define('sky-moon-normal-map', class extends HTMLElement{});
-window.customElements.define('sky-moon-roughness-map', class extends HTMLElement{});
-window.customElements.define('sky-moon-aperture-size-map', class extends HTMLElement{});
-window.customElements.define('sky-moon-aperture-orientation-map', class extends HTMLElement{});
-window.customElements.define('sky-star-cubemap-maps', class extends HTMLElement{});
-window.customElements.define('sky-dim-star-maps', class extends HTMLElement{});
-window.customElements.define('sky-med-star-maps', class extends HTMLElement{});
-window.customElements.define('sky-bright-star-maps', class extends HTMLElement{});
-window.customElements.define('sky-star-color-map', class extends HTMLElement{});
-window.customElements.define('sky-blue-noise-maps', class extends HTMLElement{});
-window.customElements.define('sky-solar-eclipse-map', class extends HTMLElement{});
-
 StarrySky.DefaultData.fileNames = {
   moonDiffuseMap: 'lunar-diffuse-map.webp',
   moonNormalMap: 'lunar-normal-map.webp',
@@ -75,132 +61,173 @@ StarrySky.DefaultData.assetPaths = {
 StarrySky.assetPaths = JSON.parse(JSON.stringify(StarrySky.DefaultData.assetPaths));
 
 //Parent class
-class SkyAssetsDir extends HTMLElement {
-  constructor(){
-    super();
+const SkyAssetsDir = function(values){
+  //Check if there are any child elements. Otherwise set them to the default.
+  this.skyDataLoaded = false;
+  this.data = StarrySky.DefaultData.assetPaths;
+  this.isRoot = false;
 
-    //Check if there are any child elements. Otherwise set them to the default.
-    this.skyDataLoaded = false;
-    this.data = StarrySky.DefaultData.assetPaths;
-    this.isRoot = false;
+  const self = this;
+  function stripStartingAndTrailingSlashes(path, filename){
+    filename = filename.startsWith('/') ? path.slice(1, path.length - 1) : path;
+    filename = filename.endsWith('/') ? path.slice(0, path.length - 2) : path;
+    path = path.endsWith('/') ? path : path + '/';
+    return path + filename;
   }
+  this.explore = function(values, pwd_in){
+    searchDepth++;
+    if(searchDepth > 99){
+      console.error("Why do you need a hundred of these?! You should be able to use like... 2. Maybe 3? I'm breaking to avoid freezing your machine.");
+      return false; //Oh, no, you don't just get to break, we're shutting down the entire function
+    }
 
-  connectedCallback(){
-    //Hide the element
-    this.style.display = "none";
+    let pwd = pwd_in;
+    if(values.hasOwnProperty('directory')){
+      const pwd = stripStartingAndTrailingSlashes(pwd_in, values.directory) + '/';
+    }
 
-    const self = this;
-    document.addEventListener('DOMContentLoaded', function(evt){
-      //Check this this has a parent sky-assets-dir
-      self.isRoot = self.parentElement.nodeName.toLowerCase() !== 'sky-assets-dir';
-      let path = 'dir' in self.attributes ? self.attributes.dir.value : '/';
-      let parentTag = self.parentElement;
+    const newData = {
+      moonDiffuseMap: values.hasOwnProperty('moon_diffuse_map') ? stripStartingAndTrailingSlashes(pwd, values.moon_diffuse_map) : self.data.moonDiffuseMap,
+      moonNormalMap: values.hasOwnProperty('moon_normal_map') ? stripStartingAndTrailingSlashes(pwd, values.moon_normal_map) : self.data.moonNormalMap,
+      moonRoughnessMap: values.hasOwnProperty('moon_roughness_map') ? stripStartingAndTrailingSlashes(pwd, values.moon_roughness_map) : self.data.moonRoughnessMap,
+      moonApertureSizeMap: values.hasOwnProperty('moon_aperture_size_map') ? stripStartingAndTrailingSlashes(pwd, values.moon_aperture_size_map) : self.data.moonApertureSizeMap,
+      moonApertureOrientationMap: values.hasOwnProperty('moon_aperture_orientation_map') ? stripStartingAndTrailingSlashes(pwd, values.moon_aperture_orientation_map) : self.data.moonApertureOrientationMap,
+      starColorMap: values.hasOwnProperty('star_color_map') ? stripStartingAndTrailingSlashes(pwd, values.star_color_map) : self.data.starColorMap,
+      solarEclipseMap: values.hasOwnProperty('solar_eclipse_map') ? stripStartingAndTrailingSlashes(pwd, values.solar_eclipse_map) : self.data.solarEclipseMap,
+      starHashCubemap: self.data.starHashCubemap,
+      dimStarDataMaps: self.data.dimStarDataMaps,
+      medStarDataMaps: self.data.medStarDataMaps,
+      brightStarDataMaps: self.data.brightStarDataMaps,
+      blueNoiseMaps: self.data.blueNoiseMaps
+    };
 
-      //If this isn't root, we should recursively travel up the tree until we have constructed
-      //our path.
-      var i = 0;
-      while(parentTag.nodeName.toLowerCase() === 'sky-assets-dir'){
-        let parentDir;
-        if('dir' in parentTag.attributes){
-          parentDir = parentTag.attributes.dir.value;
-        }
-        else{
-          parentDir = '';
-        }
-        if(parentDir.length > 0){
-          //We add the trailing / back in if we are going another level deeper
-          parentDir = parentDir.endsWith('/') ? parentDir : parentDir + '/';
-
-          //Remove the trailing and ending /s for appropriate path construction
-          path = path.startsWith('/') ? path.slice(1, path.length - 1) : path;
-          path = path.endsWith('/') ? path.slice(0, path.length - 2) : path;
-          path = parentDir + path;
-        }
-        else{
-          path = parentDir + path;
-        }
-        parentTag = parentTag.parentElement;
-        i++;
-        if(i > 100){
-          console.error("Why do you need a hundred of these?! You should be able to use like... 2. Maybe 3? I'm breaking to avoid freezing your machine.");
-          return; //Oh, no, you don't just get to break, we're shutting down the entire function
-        }
+    if(values.hasOwnProperty('star_hash_cubemap')){
+      let pwd_2 = pwd;
+      if(values.star_hash_cubemap.hasOwnProperty('directory')){
+        pwd_2 = stripStartingAndTrailingSlashes(pwd_2, values.star_hash_cubemap.directory) + '/';
       }
-
-      //Get child tags and acquire their values.
-      const childNodes = Array.from(self.children);
-      const moonDiffuseMapTags = childNodes.filter(x => x.nodeName.toLowerCase() === 'sky-moon-diffuse-map');
-      const moonNormalMapTags = childNodes.filter(x => x.nodeName.toLowerCase() === 'sky-moon-normal-map');
-      const moonRoughnessMapTags = childNodes.filter(x => x.nodeName.toLowerCase() === 'sky-moon-roughness-map');
-      const moonApertureSizeMapTags = childNodes.filter(x => x.nodeName.toLowerCase() === 'sky-moon-aperture-size-map');
-      const solarEclipseMapTags = childNodes.filter(x => x.nodeName.toLowerCase() === 'sky-solar-eclipse-map');
-      const moonApertureOrientationMapTags = childNodes.filter(x => x.nodeName.toLowerCase() === 'sky-moon-aperture-orientation-map');
-      const starCubemapTags = childNodes.filter(x => x.nodeName.toLowerCase() === 'sky-star-cubemap-map');
-      const dimStarMapTags = childNodes.filter(x => x.nodeName.toLowerCase() === 'sky-dim-star-map');
-      const medStarMapTags = childNodes.filter(x => x.nodeName.toLowerCase() === 'sky-med-star-map');
-      const brightStarMapTags = childNodes.filter(x => x.nodeName.toLowerCase() === 'sky-bright-star-map');
-      const starColorMapTags = childNodes.filter(x => x.nodeName.toLowerCase() === 'sky-star-color-map');
-      const blueNoiseMapTags = childNodes.filter(x => x.nodeName.toLowerCase() === 'sky-blue-noise-maps');
-
-      const objectProperties = ['moonDiffuseMap', 'moonNormalMap',
-        'moonRoughnessMap', 'moonApertureSizeMap', 'moonApertureOrientationMap', 'starHashCubemap',
-        'dimStarMaps', 'medStarMaps', 'brightStarMaps', 'starColorMap', 'blueNoiseMaps', 'solarEclipseMap']
-      const tagsList = [moonDiffuseMapTags, moonNormalMapTags,
-        moonRoughnessMapTags, moonApertureSizeMapTags, moonApertureOrientationMapTags, starCubemapTags,
-        medStarMapTags, dimStarMapTags, brightStarMapTags, starColorMapTags, blueNoiseMapTags, solarEclipseMapTags];
-      const numberOfTagTypes = tagsList.length;
-      if(self.hasAttribute('texture-path') && self.getAttribute('texture-path').toLowerCase() !== 'false'){
-        const singleTextureKeys = ['moonDiffuseMap', 'moonNormalMap', 'moonRoughnessMap',
-        'moonApertureSizeMap', 'moonApertureOrientationMap', 'starColorMap', 'solarEclipseMap'];
-        const multiTextureKeys = ['starHashCubemap','dimStarDataMaps', 'medStarDataMaps', 'brightStarDataMaps',
-        'blueNoiseMaps'];
-
-        //Process single texture keys
-        for(let i = 0; i < singleTextureKeys.length; ++i){
-          StarrySky.assetPaths[singleTextureKeys[i]] = path + '/' + StarrySky.DefaultData.fileNames[singleTextureKeys[i]];
-        }
-
-        //Process multi texture keys
-        for(let i = 0; i < multiTextureKeys.length; ++i){
-          let multiTextureFileNames = multiTextureKeys[i];
-          for(let j = 0; j < multiTextureFileNames.length; ++j){
-            StarrySky.assetPaths[multiTextureFileNames[i]][j] = path + '/' + StarrySky.DefaultData.fileNames[singleTextureKeys[i]][j];
-          }
-        }
+      foreach(StarrySky.DefaultData.fileNames.starHashCubemap as starHashCubemapFile){
+        newData.starHashCubemap.push(stripStartingAndTrailingSlashes(pwd_2, starHashCubemapFile));
       }
-      else if(self.hasAttribute('moon-path') && self.getAttribute('moon-path').toLowerCase() !== 'false'){
-        const moonTextureKeys = ['moonDiffuseMap', 'moonNormalMap', 'moonRoughnessMap',
-        'moonApertureSizeMap', 'moonApertureOrientationMap'];
-        for(let i = 0; i < moonTextureKeys.length; ++i){
-          StarrySky.assetPaths[moonTextureKeys[i]] = path + '/' + StarrySky.DefaultData.fileNames[moonTextureKeys[i]];
-        }
+    }
+    if(values.hasOwnProperty('dim_star_datamap')){
+      let pwd_2 = pwd;
+      if(values.star_hash_cubemap.hasOwnProperty('directory')){
+        pwd_2 = stripStartingAndTrailingSlashes(pwd_2, values.dim_star_datamap.directory) + '/';
       }
-      else if(self.hasAttribute('star-path') && self.getAttribute('star-path').toLowerCase() !== 'false'){
-        const starTextureKeys = ['starHashCubemap', 'dimStarDataMaps', 'medStarDataMaps', 'brightStarDataMaps'];
-        for(let i = 0; i < starTextureKeys.length; ++i){
-          let starMapFileNames =  StarrySky.DefaultData.fileNames[starTextureKeys[i]];
-          for(let j = 0; j < starMapFileNames.length; ++j){
-            StarrySky.assetPaths[starTextureKeys[i]][j] = path + '/' + starMapFileNames[j];
-          }
-        }
+      foreach(StarrySky.DefaultData.fileNames.dimStarDataMaps as dimStartDataMap){
+        newData.dimStarDataMaps.push(stripStartingAndTrailingSlashes(pwd_2, dimStartDataMap));
+      }
+    }
+    if(values.hasOwnProperty('med_star_datamap')){
+      let pwd_2 = pwd;
+      if(values.star_hash_cubemap.hasOwnProperty('directory')){
+        pwd_2 = stripStartingAndTrailingSlashes(pwd_2, values.med_star_datamap.directory) + '/';
+      }
+      foreach(StarrySky.DefaultData.fileNames.medStarDataMaps as medStarDataMap){
+        newData.medStarDataMaps.push(stripStartingAndTrailingSlashes(pwd_2, medStarDataMap));
+      }
+    }
+    if(values.hasOwnProperty('bright_star_datamap')){
+      let pwd_2 = pwd;
+      if(values.star_hash_cubemap.hasOwnProperty('directory')){
+        pwd_2 = stripStartingAndTrailingSlashes(pwd_2, values.bright_star_datamap.directory) + '/';
+      }
+      foreach(StarrySky.DefaultData.fileNames.brightStarDataMaps as brightStarDataMap){
+        newData.brightStarDataMaps.push(stripStartingAndTrailingSlashes(pwd_2, brightStarDataMap));
+      }
+    }
+    if(values.hasOwnProperty('blue_noise_maps')){
+      let pwd_2 = pwd;
+      if(values.blue_noise_maps.hasOwnProperty('directory')){
+        pwd_2 = stripStartingAndTrailingSlashes(pwd_2, values.blue_noise_maps.directory) + '/';
+      }
+      foreach(StarrySky.DefaultData.fileNames.blueNoiseMaps as blueNoiseMap){
+        newData.blueNoiseMaps.push(stripStartingAndTrailingSlashes(pwd_2, blueNoiseMap));
+      }
+    }
+    self.data = newData;
 
-        StarrySky.assetPaths['starColorMap'] = path + '/' + StarrySky.DefaultData.fileNames['starColorMap'];
+    const properties = Object.keys(values);
+    for(const i = 0, numProperties = properties.length; i < numProperties; ++i){
+      const property = properties[i];
+      if(property.endsWith('_directory')){
+        const subDirectoryValues = values.property;
+        this.explore(subDirectoryValues, pwd);
       }
-      else if(self.hasAttribute('blue-noise-path') && self.getAttribute('blue-noise-path').toLowerCase() !== 'false'){
-        for(let i = 0; i < 5; ++i){
-          let blueNoiseFileNames =  StarrySky.DefaultData.fileNames['blue-noise-' + i];
-          StarrySky.assetPaths['blueNoiseMaps'][i] = path + '/' + StarrySky.DefaultData.fileNames['blueNoiseMaps'][i];
-        }
-      }
-      else if(self.hasAttribute('solar-eclipse-path') && self.getAttribute('solar-eclipse-path').toLowerCase() !== 'false'){
-        StarrySky.assetPaths['solarEclipseMap'] = path + '/' + StarrySky.DefaultData.fileNames['solarEclipseMap'];
-      }
+    }
+  };
+  this.init = function(values){
+    let pwd = values.hasOwnProperty('directory') ? values.directory : '/';
+    let searchDepth = 0;
+    self.data = {
+      moonDiffuseMap: values.hasOwnProperty('moon_diffuse_map') ? stripStartingAndTrailingSlashes(pwd, values.moon_diffuse_map) : StarrySky.DefaultData.assetPaths.moonDiffuseMap,
+      moonNormalMap: values.hasOwnProperty('moon_normal_map') ? stripStartingAndTrailingSlashes(pwd, values.moon_normal_map) : StarrySky.DefaultData.assetPaths.moonNormalMap,
+      moonRoughnessMap: values.hasOwnProperty('moon_roughness_map') ? stripStartingAndTrailingSlashes(pwd, values.moon_roughness_map) : StarrySky.DefaultData.assetPaths.moonRoughnessMap,
+      moonApertureSizeMap: values.hasOwnProperty('moon_aperture_size_map') ? stripStartingAndTrailingSlashes(pwd, values.moon_aperture_size_map) : StarrySky.DefaultData.assetPaths.moonApertureSizeMap,
+      moonApertureOrientationMap: values.hasOwnProperty('moon_aperture_orientation_map') ? stripStartingAndTrailingSlashes(pwd, values.moon_aperture_orientation_map) : StarrySky.DefaultData.assetPaths.moonApertureOrientationMap,
+      starColorMap: values.hasOwnProperty('star_color_map') ? stripStartingAndTrailingSlashes(pwd, values.star_color_map) : StarrySky.DefaultData.assetPaths.starColorMap,
+      solarEclipseMap: values.hasOwnProperty('solar_eclipse_map') ? stripStartingAndTrailingSlashes(pwd, values.solar_eclipse_map) : StarrySky.DefaultData.assetPaths.solarEclipseMap,
+      starHashCubemap: [],
+      dimStarDataMaps: [],
+      medStarDataMaps: [],
+      brightStarDataMaps: [],
+      blueNoiseMaps: []
+    };
 
-      self.skyDataLoaded = true;
-      document.dispatchEvent(new Event('Sky-Data-Loaded'));
-    });
+    if(values.hasOwnProperty('star_hash_cubemap')){
+      let pwd_2 = pwd;
+      if(values.star_hash_cubemap.hasOwnProperty('directory')){
+        pwd_2 = stripStartingAndTrailingSlashes(pwd_2, values.star_hash_cubemap.directory) + '/';
+      }
+      foreach(StarrySky.DefaultData.fileNames.starHashCubemap as starHashCubemapFile){
+        self.data.starHashCubemap.push(stripStartingAndTrailingSlashes(pwd_2, starHashCubemapFile));
+      }
+    }
+    if(values.hasOwnProperty('dim_star_datamap')){
+      let pwd_2 = pwd;
+      if(values.star_hash_cubemap.hasOwnProperty('directory')){
+        pwd_2 = stripStartingAndTrailingSlashes(pwd_2, values.dim_star_datamap.directory) + '/';
+      }
+      foreach(StarrySky.DefaultData.fileNames.dimStarDataMaps as dimStartDataMap){
+        self.data.dimStarDataMaps.push(stripStartingAndTrailingSlashes(pwd_2, dimStartDataMap));
+      }
+    }
+    if(values.hasOwnProperty('med_star_datamap')){
+      let pwd_2 = pwd;
+      if(values.star_hash_cubemap.hasOwnProperty('directory')){
+        pwd_2 = stripStartingAndTrailingSlashes(pwd_2, values.med_star_datamap.directory) + '/';
+      }
+      foreach(StarrySky.DefaultData.fileNames.medStarDataMaps as medStarDataMap){
+        self.data.medStarDataMaps.push(stripStartingAndTrailingSlashes(pwd_2, medStarDataMap));
+      }
+    }
+    if(values.hasOwnProperty('bright_star_datamap')){
+      let pwd_2 = pwd;
+      if(values.star_hash_cubemap.hasOwnProperty('directory')){
+        pwd_2 = stripStartingAndTrailingSlashes(pwd_2, values.bright_star_datamap.directory) + '/';
+      }
+      foreach(StarrySky.DefaultData.fileNames.brightStarDataMaps as brightStarDataMap){
+        self.data.brightStarDataMaps.push(stripStartingAndTrailingSlashes(pwd_2, brightStarDataMap));
+      }
+    }
+    if(values.hasOwnProperty('blue_noise_maps')){
+      let pwd_2 = pwd;
+      if(values.blue_noise_maps.hasOwnProperty('directory')){
+        pwd_2 = stripStartingAndTrailingSlashes(pwd_2, values.blue_noise_maps.directory) + '/';
+      }
+      foreach(StarrySky.DefaultData.fileNames.blueNoiseMaps as blueNoiseMap){
+        self.data.blueNoiseMaps.push(stripStartingAndTrailingSlashes(pwd_2, blueNoiseMap));
+      }
+    }
 
-    this.loaded = true;
+    const properties = Object.keys(values);
+    for(const i = 0, numProperties = properties.length; i < numProperties; ++i){
+      const property = properties[i];
+      if(property.endsWith('_directory')){
+        const subDirectoryValues = values.property;
+        explore(subDirectoryValues, pwd);
+      }
+    }
   };
 }
-window.customElements.define('sky-assets-dir', SkyAssetsDir);

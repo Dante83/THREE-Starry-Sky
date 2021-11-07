@@ -9,28 +9,26 @@
     <!--Meta-->
     <meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no,user-scalable=no,maximum-scale=1">
 
-    <!-- Built for A-Frame -->
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
-    <!--This commented out code is the unfurled stack which I use for debugging-->
+    <!-- Built for THREE.js -->
 
-    <!-- A-Starry-Sky Version 1.0 -->
-    <script src="../dist/a-starry-sky.v1.0.0.min.js"></script>
+    <!-- THREE.JS Version 122 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
     <!-- Sky Interpolator -->
     <script src="../dist/wasm/interpolation-engine.js"></script>
-    <!-- <script src="../src/cpp/interpolation-engine/interpolation-engine.js"></script> -->
+    <script src="../src/cpp/interpolation-engine/interpolation-engine.js"></script>
 
     <!-- The below are used for development purposes, it is advised that you use the files in the dist folder -->
     <!-- Three.js extensions -->
-    <!-- <script src="../src/js/three_js_extensions/BufferGeometryUtils.js"></script>
-    <script src="../src/js/three_js_extensions/StarrySkyGPUComputeRenderer.js"></script> -->
+    <script src="../src/js/three_js_extensions/BufferGeometryUtils.js"></script>
+    <script src="../src/js/three_js_extensions/StarrySkyGPUComputeRenderer.js"></script>
 
     <!-- Namespace -->
-    <!-- <script src="../src/js/StarrySky.js"></script> -->
+    <script src="../src/js/StarrySky.js"></script>
+    <script src="../src/js/THREEStarrySky.js"></script>
 
     <!-- Materials -->
-    <!-- <script src="../src/js/materials/atmosphere/atmosphere-functions.js"></script>
+    <script src="../src/js/materials/atmosphere/atmosphere-functions.js"></script>
     <script src="../src/js/materials/atmosphere/transmittance.js"></script>
     <script src="../src/js/materials/atmosphere/single-scattering.js"></script>
     <script src="../src/js/materials/atmosphere/inscattering-sum.js"></script>
@@ -44,59 +42,240 @@
     <script src="../src/js/materials/moon/base-moon-partial.js"></script>
     <script src="../src/js/materials/stars/star-data-map.js"></script>
     <script src="../src/js/materials/autoexposure/metering-survey.js"></script>
-    <script src="../src/js/materials/autoexposure/test-pass.js"></script> -->
+    <script src="../src/js/materials/autoexposure/test-pass.js"></script>
 
-    <!--- Custom HTML Tags -->
-    <!-- <script src="../src/js/html_tags/SkyAssetsDir.js"></script>
+    <!--- Custom Property Loaders -->
+    <script src="../src/js/html_tags/SkyAssetsDir.js"></script>
     <script src="../src/js/html_tags/SkyAtmosphericParameters.js"></script>
     <script src="../src/js/html_tags/SkyLocation.js"></script>
     <script src="../src/js/html_tags/SkyTime.js"></script>
-    <script src="../src/js/html_tags/SkyLighting.js"></script> -->
+    <script src="../src/js/html_tags/SkyLighting.js"></script>
 
     <!-- LUT Libraries -->
-    <!-- <script src="../src/js/lut_libraries/AtmosphericLUTLibrary.js"></script>
-    <script src="../src/js/lut_libraries/StellarLUTLibrary.js"></script> -->
+    <script src="../src/js/lut_libraries/AtmosphericLUTLibrary.js"></script>
+    <script src="../src/js/lut_libraries/StellarLUTLibrary.js"></script>
 
     <!-- Renderers -->
-    <!-- <script src="../src/js/renderers/AtmosphereRenderer.js"></script>
+    <script src="../src/js/renderers/AtmosphereRenderer.js"></script>
     <script src="../src/js/renderers/BloomRenderer.js"></script>
     <script src="../src/js/renderers/SunRenderer.js"></script>
     <script src="../src/js/renderers/MoonRenderer.js"></script>
-    <script src="../src/js/renderers/MeteringSurveyRenderer.js"></script> -->
+    <script src="../src/js/renderers/MeteringSurveyRenderer.js"></script>
 
     <!--Players -->
-    <!-- <script src="../src/js/components/LightingManager.js"></script>
+    <script src="../src/js/components/LightingManager.js"></script>
     <script src="../src/js/components/AssetManager.js"></script>
-    <script src="../src/js/components/SkyDirector.js"></script> -->
+    <script src="../src/js/components/SkyDirector.js"></script>
 
     <!-- A-Frame Hooks -->
-    <!-- <script src="../src/js/primitives/a-starry-sky.js"></script>
-    <script src="../src/js/components/starry-sky-wrapper.js"></script> -->
-
+    <script src="../src/js/primitives/a-starry-sky.js"></script>
   <!--Scene Scripts-->
+
+  <!--CSS-->
+  <link rel="stylesheet" href="desert.css">
+
   </head>
-  <body>
-    <a-scene physics light="defaultLightsEnabled: false" shadow="type: pcfsoft">
-      <!-- Sky Setup -->
-      <a-starry-sky web-worker-src="../dist/wasm/starry-sky-web-worker.js">
-          <sky-time>
-            <sky-date>1226-12-26 21:00:00</sky-date>
-          </sky-time>
-          <sky-atmospheric-parameters>
-            <sky-moon-angular-diameter>15.0</sky-moon-angular-diameter>
-          </sky-atmospheric-parameters>
-      </a-starry-sky>
+  <body style="overflow: hidden; margin: 0; padding: 0;">
+    <div id="blocker">
+			<div id="instructions">
+				<p style="font-size:36px">
+					Click to play
+				</p>
+				<p>
+					Move: WASD<br>
+					Jump: SPACE<br>
+					Look: MOUSE
+				</p>
+			</div>
+		</div>
 
-      <a-assets>
-        <a-asset-item id="low-poly-desert" src="./assets/3d-models/low-poly-desert.glb" ></a-asset-item>
-      </a-assets>
+    <script type="module">
+      import * as THREE from '../node_modules/three/build/three.module.js';
+      import {GLTFLoader} from '../node_modules/three/examples/jsm/loaders/GLTFLoader.js';
 
-      <a-entity id="rig" movement-controls position="25 0 25">
-        <a-entity camera look-controls wasd-controls="acceleration: 30"></a-entity>
-      </a-entity>
+			import Stats from '../node_modules/three/examples/jsm/libs/stats.module.js';
+			import {GUI} from '../node_modules/three/examples/jsm/libs/dat.gui.module.js';
 
-      <!-- Scene Setup-->
-      <a-entity gltf-model="#low-poly-desert" position="0 0 0" shadow="cast: false"></a-entity>
-    </a-scene>
+			import {PointerLockControls} from '../node_modules/three/examples/jsm/controls/PointerLockControls.js';
+
+      //Set up the Scene and Camera
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      // camera.position.set( 25, 0, 25 );
+      const renderer = new THREE.WebGLRenderer();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.VSMShadowMap;
+
+      const stats = new Stats();
+			document.body.appendChild(stats.dom);
+
+      const controls = new PointerLockControls(camera, document.body);
+			const blocker = document.getElementById( 'blocker' );
+			const instructions = document.getElementById( 'instructions' );
+
+			instructions.addEventListener('click', function(){
+				controls.lock();
+			});
+
+			controls.addEventListener('lock', function(){
+				instructions.style.display = 'none';
+				blocker.style.display = 'none';
+			});
+
+			controls.addEventListener('unlock', function(){
+				blocker.style.display = 'block';
+				instructions.style.display = '';
+			});
+			scene.add(controls.getObject());
+
+      const onKeyDown = function (event){
+				switch(event.code){
+					case 'ArrowUp':
+					case 'KeyW':
+						moveForward = true;
+						break;
+					case 'ArrowLeft':
+					case 'KeyA':
+						moveLeft = true;
+						break;
+					case 'ArrowDown':
+					case 'KeyS':
+						moveBackward = true;
+						break;
+					case 'ArrowRight':
+					case 'KeyD':
+						moveRight = true;
+						break;
+					case 'Space':
+						if ( canJump === true ) velocity.y += 350;
+						canJump = false;
+						break;
+				}
+			};
+			const onKeyUp = function(event){
+				switch(event.code){
+					case 'ArrowUp':
+					case 'KeyW':
+						moveForward = false;
+						break;
+					case 'ArrowLeft':
+					case 'KeyA':
+						moveLeft = false;
+						break;
+					case 'ArrowDown':
+					case 'KeyS':
+						moveBackward = false;
+						break;
+					case 'ArrowRight':
+					case 'KeyD':
+						moveRight = false;
+						break;
+				}
+			};
+			document.addEventListener('keydown', onKeyDown);
+			document.addEventListener('keyup', onKeyUp);
+			const raycaster = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, - 1, 0), 0, 10);
+      const objects = [];
+
+			const clock = new THREE.Clock();
+
+      const light = new THREE.AmbientLight( 0x404040 ); // soft white light
+      light.intensity = 5;
+      scene.add( light );
+
+      //Set up the desert scene
+      const glftLoader = new GLTFLoader();
+      glftLoader.load(
+      	// resource URL
+      	'./assets/3d-models/low-poly-desert.glb',
+      	// called when the resource is loaded
+      	function(gltf){
+      		scene.add(gltf.scene);
+          objects.push(gltf.scene);
+      	},
+      	// called while loading is progressing
+      	function(xhr){
+      		console.log((xhr.loaded/xhr.total * 100 ) + '% loaded');
+      	},
+      	// called when loading has errors
+      	function(error){
+      		console.log( 'An error happened' );
+      	}
+      );
+
+      //
+      //Set up A-Starry-Sky
+      //This is the bit that matters
+      //
+      let prevTime = performance.now(); //We need this for our time diff
+      const sky = new StarrySky.Sky('../dist/wasm/starry-sky-web-worker.js');
+      //
+      //End set up of A-Starry-Sky
+      //Don't forget the update method below in animate
+      //
+
+      let moveForward = false;
+			let moveBackward = false;
+			let moveLeft = false;
+			let moveRight = false;
+			let canJump = false;
+
+			const velocity = new THREE.Vector3();
+			const direction = new THREE.Vector3();
+			const vertex = new THREE.Vector3();
+			const color = new THREE.Color();
+      function animate(){
+        const delta = clock.getDelta();
+				const time = clock.elapsedTime;
+        stats.update();
+        sky.tick(time, delta); //Tick our sky on every frame to update all the components
+
+        //Using the raycaster code from https://threejs.org/examples/#misc_controls_pointerlock
+        if (controls.isLocked === true){
+					raycaster.ray.origin.copy(controls.getObject().position);
+					raycaster.ray.origin.y -= 10;
+
+					const intersections = raycaster.intersectObjects(objects);
+					const onObject = intersections.length > 0;
+					const delta = (time - prevTime) / 1000;
+
+					velocity.x -= velocity.x * 10.0 * delta;
+					velocity.z -= velocity.z * 10.0 * delta;
+					velocity.y -= 9.8 * 100.0 * delta; // 100.0 = mass
+					direction.z = Number(moveForward) - Number(moveBackward);
+					direction.x = Number(moveRight) - Number(moveLeft);
+					direction.normalize(); // this ensures consistent movements in all directions
+
+					if (moveForward || moveBackward) velocity.z -= direction.z * 400.0 * delta;
+					if (moveLeft || moveRight) velocity.x -= direction.x * 400.0 * delta;
+
+					if (onObject === true) {
+						velocity.y = Math.max( 0, velocity.y );
+						canJump = true;
+					}
+
+					controls.moveRight( - velocity.x * delta );
+					controls.moveForward( - velocity.z * delta );
+					controls.getObject().position.y += ( velocity.y * delta ); // new behavior
+					if(controls.getObject().position.y < 10){
+						velocity.y = 0;
+						controls.getObject().position.y = 10;
+						canJump = true;
+					}
+				}
+
+        //
+        //Call on each frame
+        //
+        renderer.clear();
+        requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+        prevTime = time;
+      }
+      animate();
+    </script>
   </body>
 </html>
